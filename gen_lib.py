@@ -22,10 +22,11 @@ class Markdown(Environment):
     content_separator = "\n"
 
 
-def generate_shuffled_images(dirname, num_rows, num_cols, document_options, geometry_options, output_dir):
-    images = glob.glob(f'{dirname}/*')
+def generate_shuffled_images(images=None, dirname=None, num_rows=1, num_cols=1, document_options=None, geometry_options=None, output_dir=None):
+    if images is None and dirname is not None:
+        images = glob.glob(f'{dirname}/*')
 
-    assert len(images) >= num_rows * num_cols, 'The number of images of images is less than the expected table.'
+    assert len(images) >= num_rows * num_cols, f'The number of images of images is less than the expected grid (num_rows={num_rows}, num_cols={num_cols}).'
 
     random.shuffle(images)
 
@@ -42,21 +43,23 @@ def generate_shuffled_images(dirname, num_rows, num_cols, document_options, geom
 
     with doc.create(Markdown()):
             doc.append(document_options['markdown'])
-    print(num_rows, num_cols)
 
     with doc.create(Figure(position='hbt!')):
             doc.append(Command('centering'))
             for i in range(num_rows):
                 for j in range(num_cols):
                     with doc.create(SubFigure(position='t', width=NoEscape(f"{1/(num_cols + 1)}\\linewidth"))) as fig:
-                        fig.add_image(images[i * num_cols + j], width=NoEscape(r"\linewidth"))
+                        fig.add_image(images[i * num_cols + j], width=NoEscape(r"0.95\linewidth"))
                         fig.add_caption('')
+                        doc.append(NoEscape(r'\hfill\hspace{0.5em}'))
                 doc.append(NoEscape(r'\hspace{\fill}'))
     
     doc.generate_pdf(compiler_args=['--shell-escape'])
     doc.generate_tex()
 
     return filename
+
+
 
 if __name__ == '__main__':
     dirname = os.path.abspath('./downloads/trainingSample/')

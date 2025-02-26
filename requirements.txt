@@ -3,3 +3,6 @@ PyLaTeX==1.4.2
 streamlit==1.42.2
 streamlit-code-editor==0.1.22
 streamlit-pdf-viewer==0.0.21
+gradio_pdf
+gradio
+pdf2image
