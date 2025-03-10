@@ -33,9 +33,9 @@ with gr.Blocks() as demo:
             file_output = gr.File(file_types=["image"], file_count="multiple")
             upload_button = gr.UploadButton("Click to Upload a File", file_types=["image"], file_count="multiple")
             upload_button.upload(upload_file, upload_button, file_output)
-            
-            gr.Markdown('## Enter You Markdown Code')
-            markdown_code = gr.Code('# Main Section', language='markdown', show_line_numbers=True, interactive=True)
+
+            gr.Markdown('## List of words')
+            words = gr.TextArea(label='Words (separated by newline)')
 
             gr.Markdown('## Grid Configuration')
             num_rows = gr.Number(minimum=1, value=1, label='Number of rows')
@@ -43,9 +43,8 @@ with gr.Blocks() as demo:
 
             gr.Markdown('## Instances Configuration')
             num_instances = gr.Number(minimum=1, value=1, step=1, label='Number of instances')
-            doc_title = gr.Textbox(label='Title', value='The document title')
-            doc_author = gr.Textbox(label='Author', value='Author name')
-
+            seletcted_mode = gr.Dropdown(['Images', 'Words', 'Both'], label='Select the mode')
+            
             gr.Markdown('---')
             generate_btn = gr.Button('Generate', variant='primary')
             
@@ -56,25 +55,19 @@ with gr.Blocks() as demo:
             gr.Markdown('## Download')
             download_button = gr.DownloadButton('Download the archive', interactive=False)
 
-        def generate_listener(images, markdown_code, num_rows, num_cols, num_instances, title, author):
+        def generate_listener(images, num_rows, num_cols, num_instances):
             instance_id = str(uuid.uuid4())
             output_dir = f'/tmp/gsi/{instance_id}'
             os.makedirs(output_dir, exist_ok=True)
             
-            genereted_items = []
-            for _ in range(num_instances):
-                result = generate_shuffled_images(
+            result = generate_shuffled_images(
+                    num_instances=num_instances,
                     images=images, 
                     num_cols=num_cols, 
                     num_rows=num_rows, 
                     output_dir=output_dir,
-                    geometry_options=geometry_options,
-                    document_options={
-                    'title' : title,
-                    'author': author,
-                    'markdown': markdown_code,
-                })
-                genereted_items.append(result)
+                    geometry_options=geometry_options
+                    )
 
             zip_filename = str(uuid.uuid4())
             zip_file = f'/tmp/gsi/archive-{zip_filename}'
@@ -82,9 +75,12 @@ with gr.Blocks() as demo:
 
             return {
                 download_button: gr.DownloadButton('Download the archive', interactive=True, value=f'{zip_file}.zip', variant='primary'),
-                gallery: convert_from_path(f'{genereted_items[0]}.pdf')
+                gallery: convert_from_path(f'{result}.pdf')
             }
         
-        generate_btn.click(generate_listener, inputs=[file_output, markdown_code, num_rows, num_cols, num_instances, doc_title, doc_author], outputs=[download_button, gallery])
-if __name__ == "__main__":
-    demo.launch(share=True)
+        try:
+            generate_btn.click(generate_listener, inputs=[file_output, num_rows, num_cols, num_instances], outputs=[download_button, gallery])
+        except Exception as e:
+            gr.Error(str(e))
+
+demo.launch()

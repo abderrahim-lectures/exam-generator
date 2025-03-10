@@ -22,13 +22,11 @@ class Markdown(Environment):
     content_separator = "\n"
 
 
-def generate_shuffled_images(images=None, dirname=None, num_rows=1, num_cols=1, document_options=None, geometry_options=None, output_dir=None):
+def generate_shuffled_images(num_instances=1, images=None, dirname=None, num_rows=1, num_cols=1, document_options=None, geometry_options=None, output_dir=None):
     if images is None and dirname is not None:
         images = glob.glob(f'{dirname}/*')
 
     assert len(images) >= num_rows * num_cols, f'The number of images of images is less than the expected grid (num_rows={num_rows}, num_cols={num_cols}).'
-
-    random.shuffle(images)
 
     # Document default filename
     filename = f'{output_dir}/{uuid.uuid4()}'
@@ -36,49 +34,21 @@ def generate_shuffled_images(images=None, dirname=None, num_rows=1, num_cols=1, 
     # Document object
     doc = Document(filename, geometry_options=geometry_options)
 
-    doc.preamble.append(Command("title", document_options['title']))
-    doc.preamble.append(Command("author", document_options['author']))
-    doc.preamble.append(Command("date", NoEscape(r"\today")))
-    doc.append(NoEscape(r"\maketitle"))
+    for _ in range(num_instances):
+        random.shuffle(images)
 
-    with doc.create(Markdown()):
-            doc.append(document_options['markdown'])
-
-    with doc.create(Figure(position='hbt!')):
-            doc.append(Command('centering'))
-            for i in range(num_rows):
-                for j in range(num_cols):
-                    with doc.create(SubFigure(position='t', width=NoEscape(f"{1/(num_cols + 1)}\\linewidth"))) as fig:
-                        fig.add_image(images[i * num_cols + j], width=NoEscape(r"0.95\linewidth"))
-                        fig.add_caption('')
-                        doc.append(NoEscape(r'\hfill\hspace{0.5em}'))
-                doc.append(NoEscape(r'\hspace{\fill}'))
-    
+        with doc.create(Figure(position='hbt!')):
+                doc.append(Command('centering'))
+                for i in range(num_rows):
+                    for j in range(num_cols):
+                        with doc.create(SubFigure(position='t', width=NoEscape(f"{1/(num_cols + 1)}\\linewidth"))) as fig:
+                            fig.add_image(images[i * num_cols + j], width=NoEscape(r"0.95\linewidth"))
+                            doc.append(NoEscape(r'\hfill\hspace{0.5em}'))
+                    doc.append(NoEscape(r'\hspace{\fill}'))
+        
+        doc.append(NoEscape(r'\newpage'))
+        
     doc.generate_pdf(compiler_args=['--shell-escape'])
     doc.generate_tex()
 
     return filename
-
-
-
-if __name__ == '__main__':
-    dirname = os.path.abspath('./downloads/trainingSample/')
-    num_rows = 5
-    num_cols = 5
-    document_options = {
-        'title' : 'The document title',
-        'author': 'The author name',
-        'markdown': '# First section',
-    }
-    geometry_options = {"rmargin": "1cm", "lmargin": "1cm"}
-    output_dir = 'build'
-    generate_shuffled_images(dirname, num_rows, num_cols, document_options, geometry_options, output_dir)
-
-
-
-
-
-
-
-
-

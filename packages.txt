@@ -2,3 +2,4 @@ texlive
 texlive-science
 texlive-latex-extra
 latexmk
+poppler-utils
